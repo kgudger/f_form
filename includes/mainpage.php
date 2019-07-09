@@ -33,6 +33,7 @@ class MainPage {
 	protected $sftpurl;    //!< sftp read url
 	protected $sftpsftp;   //!< sftp sftp url
 	protected $sftpport;   //!< sftp sftp port
+	protected $retstring;  //!< return string for wordpress
 
     /**
      * Constructor.
@@ -52,6 +53,7 @@ class MainPage {
 	$this->sftpport = $sftpport ;
    	$this->formL = new FormLib("error") ;
 	$this->checkArray = $checkArray;
+	$this->retstring = "" ;
 	if ( isset( $_COOKIE['host_email']) ) {
 		$this->cookie_key = $_COOKIE['host_email'];
 	} else {
@@ -85,7 +87,7 @@ class MainPage {
 			}
 		}
 //    	include "includes/header.php";	// same header for every page
-    	$this->showContent($title, $uid);
+    	return $this->showContent($title, $uid);
 //    	include "includes/footer.php";  // same footer for every page
 	}
 

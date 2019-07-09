@@ -55,7 +55,7 @@ function processData(&$uid) {
 			$fileNameCmps = explode(".", $fileName);
 			$fileExtension = strtolower(end($fileNameCmps));
 			// sanitize file-name
-			$newFileName = $fileNameCmps[0] . '.' . $fileExtension;
+			$newFileName = $fileNameCmps[0] . "_" . time() . '.' . $fileExtension;
 			// check if file has one of the following extensions
 			$allowedfileExtensions = array('wav', 'aiff', 'ogg', 'mp3', 'aac', 'wma', 'alac');
 			if (in_array($fileExtension, $allowedfileExtensions))
@@ -73,7 +73,7 @@ function processData(&$uid) {
 				}
 				catch (Exception $e)
 				{
-					echo $e->getMessage() . "\n";
+					$this->retstring = $e->getMessage() . "\n";
 				}
 /*				if(move_uploaded_file($fileTmpPath, $dest_path)) 
 				}
@@ -89,7 +89,7 @@ function processData(&$uid) {
 		$message = "Please check the reCaptcha box";
 	} else 
 		$message = "<p><font color='red'>Please check the reCaptcha box.</font></p>";
-	echo $message . "<br>";
+	$this->retstring = $message . "<br>";
 }
 
 /**
@@ -100,7 +100,7 @@ function processData(&$uid) {
  */
 function showContent($title, &$uid) {
 
-echo "<br>";
+$this->retstring.= "<br>";
 // Put HTML after the closing PHP tag
 $htmlCont = file_get_contents("https://ksqd.info:444");
 $DOM = new DOMDocument();
@@ -118,28 +118,28 @@ foreach ($rows as $row) {
 	$i++ ;
 }
 //print_r($tabData);
-?>
+$this->retstring.= <<<EOT
 <script src="https://www.google.com/recaptcha/api.js"></script>
 <div class="preamble" id="KSQD-preamble" role="article">
 <h3>Please fill out all the fields</h3>
-<?php
-	echo $this->formL->reportErrors();
+EOT;
+	$this->retstring.= $this->formL->reportErrors();
 //	echo $this->formL->start('POST', "", 'enctype="multipart/form-data" name="server_file_upload"');
-	echo $this->formL->start('POST', "", 'name="server_file_upload" enctype="multipart/form-data"');
-	echo $this->formL->makeFileInput("fname");
-	echo $this->formL->formatonError('fname','File Name') . "<br><br>";
-	echo $this->formL->makeSelect("directory",$tabData);
-	echo $this->formL->formatonError('directory','Folder for upload') ."<br><br>" ;
-?>
+	$this->retstring.= $this->formL->start('POST', "", 'name="server_file_upload" enctype="multipart/form-data"');
+	$this->retstring.= $this->formL->makeFileInput("fname");
+	$this->retstring.= $this->formL->formatonError('fname','File Name') . "<br><br>";
+	$this->retstring.= $this->formL->makeSelect("directory",$tabData);
+	$this->retstring.= $this->formL->formatonError('directory','Folder for upload') ."<br><br>" ;
+$this->retstring.= <<<EOT
 <br>
 <input class="subbutton" type="submit" name="Submit" value="Upload File">
 <br><br>
 <div class="g-recaptcha" data-sitekey="6LcwJagUAAAAANWRDfITT9FdTquL6DVoZRMgO4Ta"></div>
 </fieldset>
 </form>
-<?php
-$this->formL->finish();
-return $pagedata;
+EOT;
+$this->retstring.=$this->formL->finish();
+return $this->retstring;
 }
 }
 class SFTPConnection
