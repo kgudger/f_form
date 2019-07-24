@@ -28,11 +28,6 @@ class MainPage {
 	protected $db;		//!< PDO data base object
 	protected $checkArray; //!<check array for checkForm.
 	protected $secret;     //!< secret for recaptcha
-	protected $sftpacct;   //!< sftp server account
-	protected $sftppwd;    //!< sftp server password
-	protected $sftpurl;    //!< sftp read url
-	protected $sftpsftp;   //!< sftp sftp url
-	protected $sftpport;   //!< sftp sftp port
 	protected $retstring;  //!< return string for wordpress
 
     /**

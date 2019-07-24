@@ -7,7 +7,7 @@
 * @author Keith Gudger
 * @copyright  (c) 2019, Keith Gudger, all rights reserved
 * @license    https://www.gnu.org/licenses/gpl-3.0.html
-* @version    Release: 1.0
+* @version    Release: 1.1
 * @package    KSQD
 *
 * @note Has processData and showContent, 
@@ -65,19 +65,28 @@ function processData(&$uid) {
 				$dest_path = $uploadFileDir . $newFileName;
 				try
 				{
-					$sftp = new SFTPConnection($this->sftpsftp,$this->sftpport);
-					$sftp->login($this->sftpacct, $this->sftppwd);
-					$sftp->uploadFile($fileTmpPath, $dest_path);
-					$message ='File is successfully uploaded.';
-					$message .= "<br>Upload path is <a href=$this->sftpurl/$dirname$newFileName'>$this->sftpurl/$dirname$newFileName'</a>";
+					$tfile = tempnam("/tmp", "SFT"); // file for sftp command
+					$ufile = tempnam("/tmp", "UPL"); // file to move uploaded file to
+					move_uploaded_file($fileTmpPath,$ufile); // needed because temp file disappears when this php file stops.
+					file_put_contents($tfile, "put $ufile \"$dest_path\""); // sftp command, quotes needed for files with spaces in name
+					chmod($fileTmpPath, 0644);
+					chmod($tfile, 0644);
+					$f = socket_create(AF_UNIX, SOCK_DGRAM, 0); // create unix socket for IP communication
+					$server_side_sock = "/tmp/server.sock";
+					$len = strlen($tfile);
+					$tmpret = socket_sendto($f, $tfile, $len, 0, $server_side_sock); // send the sftp file name
+					socket_close($f);
+					if ($tmpret) { // socket message sent
+						$message ='File will be uploaded shortly.';
+						$message .= "<br>Upload path is <a href='$this->sftpurl/$dirname$newFileName'>$this->sftpurl/$dirname$newFileName</a>";
+					} else {
+						$message = "Unsuccessful upload, sorry.";
+					}
 				}
 				catch (Exception $e)
 				{
 					$this->retstring = $e->getMessage() . "\n";
 				}
-/*				if(move_uploaded_file($fileTmpPath, $dest_path)) 
-				}
-*/
 			} else {
 				$message = 'Upload failed. Allowed file types: ' . implode(',', $allowedfileExtensions);
 			}
@@ -85,7 +94,7 @@ function processData(&$uid) {
 			$message = 'There is some error in the file upload. Please check the following error.<br>';
 			$message .= 'Error:' . $_FILES['uploadedFile']['error'];
 		}
-	    } else 
+      } else 
 		$message = "Please check the reCaptcha box";
 	} else 
 		$message = "<p><font color='red'>Please check the reCaptcha box.</font></p>";
