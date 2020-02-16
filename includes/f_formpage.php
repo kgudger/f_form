@@ -31,22 +31,40 @@ class fFormPage extends MainPage {
  * @param $uid is user id passed by reference.
  */
 function processData(&$uid) {
-	$response = NULL;
-	$reCaptcha = new ReCaptcha($this->secret);
+//	$response = NULL;
+//	$reCaptcha = new ReCaptcha($this->secret);
 
     // Process the verified data here.
 	$fname   = $this->formL->getValue("fname");
 	$dirname = $this->formL->getValue("directory");
+	$minutes = $this->formL->getValue("minutes");
+	$seconds = $this->formL->getValue("seconds");
+	$t_time  = $minutes*60 + $seconds; // total seconds
 	// if submitted check response
-	if ($_POST["g-recaptcha-response"]) {
+/*	if ($_POST["g-recaptcha-response"]) {
 	    $response = $reCaptcha->verifyResponse(
 	        $_SERVER["REMOTE_ADDR"],
 	        $_POST["g-recaptcha-response"]
 	    );
 	    if ($response != null && $response->success) {
 //		print_r($_FILES);
-		if (isset($_FILES['fname']) && $_FILES['fname']['error'] === UPLOAD_ERR_OK)
-		{
+*/
+	if (isset($_POST['recaptcha_response'])) {
+
+    // Build POST request:
+		$recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
+		$recaptcha_secret = $this->secret;
+		$recaptcha_response = $_POST['recaptcha_response'];
+
+    // Make and decode POST request:
+		$recaptcha = file_get_contents($recaptcha_url . '?secret=' . $recaptcha_secret . '&response=' . $recaptcha_response);
+		$recaptcha = json_decode($recaptcha);
+
+    // Take action based on the score returned:
+		if (1) /*($recaptcha->score >= 0.5)*/ {
+        // Verified - upload files if present
+			if (isset($_FILES['fname']) && $_FILES['fname']['error'] === UPLOAD_ERR_OK)
+			{
 		// get details of the uploaded file
 			$fileTmpPath = $_FILES['fname']['tmp_name'];
 			$fileName = $_FILES['fname']['name'];
@@ -67,7 +85,15 @@ function processData(&$uid) {
 				{
 					$tfile = tempnam("/tmp", "SFT"); // file for sftp command
 					$ufile = tempnam("/tmp", "UPL"); // file to move uploaded file to
-					move_uploaded_file($fileTmpPath,$ufile); // needed because temp file disappears when this php file stops.
+					$ffile = tempnam("/tmp", "FFM"); // output file from ffmpeg strip
+					$ffile .= "." . $fileExtension ;
+//					echo "File Name " . $ffile . "<br>";
+					if ($t_time <= 0) { // don't trim file, just move it
+						move_uploaded_file($fileTmpPath,$ufile); // needed because temp file disappears when this php file stops.
+					} else {  // trim file and get ready for upload
+						shell_exec("/usr/bin/ffmpeg -i $fileTmpPath -ss $t_time -codec:a copy $ffile 2>&1");
+						$ufile = $ffile ; // make upload file name = trimmed file
+					}
 					file_put_contents($tfile, "put $ufile \"$dest_path\""); // sftp command, quotes needed for files with spaces in name
 					chmod($fileTmpPath, 0644);
 					chmod($tfile, 0644);
@@ -95,9 +121,9 @@ function processData(&$uid) {
 			$message .= 'Error:' . $_FILES['uploadedFile']['error'];
 		}
       } else 
-		$message = "Please check the reCaptcha box";
+		$message = "reCaptcha Failed, sorry";
 	} else 
-		$message = "<p><font color='red'>Please check the reCaptcha box.</font></p>";
+		$message = "<p><font color='red'>reCaptcha Failed, sorry</font></p>";
 	$this->retstring = $message . "<br>";
 }
 
@@ -128,7 +154,15 @@ foreach ($rows as $row) {
 }
 //print_r($tabData);
 $this->retstring.= <<<EOT
-<script src="https://www.google.com/recaptcha/api.js"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=6Lejg8cUAAAAAOa1YnxyH5OlD8ylW5jhD-CfRPaW"></script>
+<script>
+    grecaptcha.ready(function () {
+        grecaptcha.execute('6Lc2x20UAAAAAMdFBs4QS72nnNh1Smn6hTtfU9pl', { action: 'contact' }).then(function (token) {
+            var recaptchaResponse = document.getElementById('recaptchaResponse');
+            recaptchaResponse.value = token;
+        });
+    });
+</script>
 <div class="preamble" id="KSQD-preamble" role="article">
 <h3>Please fill out all the fields</h3>
 EOT;
@@ -139,11 +173,16 @@ EOT;
 	$this->retstring.= $this->formL->formatonError('fname','File Name') . "<br><br>";
 	$this->retstring.= $this->formL->makeSelect("directory",$tabData);
 	$this->retstring.= $this->formL->formatonError('directory','Folder for upload') ."<br><br>" ;
+	$this->retstring.= "<strong>If you would like to trim time from the beginning of this file, enter the minutes and seconds to trim below. Otherwise leave set to zero (0).</strong><br>";
+	$this->retstring.= $this->formL->makeNumberInput('minutes',"0","","0");
+	$this->retstring.= $this->formL->formatonError('minutes','Minutes') ."<br><br>" ;
+	$this->retstring.= $this->formL->makeNumberInput('seconds',"0","","0");
+	$this->retstring.= $this->formL->formatonError('seconds','Seconds') ."<br><br>" ;
 $this->retstring.= <<<EOT
 <br>
 <input class="subbutton" type="submit" name="Submit" value="Upload File">
 <br><br>
-<div class="g-recaptcha" data-sitekey="6LcwJagUAAAAANWRDfITT9FdTquL6DVoZRMgO4Ta"></div>
+<input type="hidden" name="recaptcha_response" id="recaptchaResponse">
 </fieldset>
 </form>
 EOT;
@@ -151,6 +190,8 @@ $this->retstring.=$this->formL->finish();
 return $this->retstring;
 }
 }
+// <div id = "recap" class="g-recaptcha" data-sitekey="6LcwJagUAAAAANWRDfITT9FdTquL6DVoZRMgO4Ta"></div>
+
 class SFTPConnection
 {
     private $connection;

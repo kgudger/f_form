@@ -29,7 +29,7 @@ $checkArray = array(
 );
 
 /// a new instance of the derived class (from MainPage)
-$fform = new fFormPage($db,$sessvar,$checkArray,$secret,$sftpacct,$sftppwd,$sftpurl,$sftpsftp,$sftpport) ;
+$fform = new fFormPage($db,$sessvar,$checkArray,$secret3a,$sftpacct,$sftppwd,$sftpurl,$sftpsftp,$sftpport) ;
 /// and ... start it up!  
 return $fform->main("File Upload Form", $uid, "", "");
 /**
