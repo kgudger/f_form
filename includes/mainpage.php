@@ -11,8 +11,8 @@
  *
  */
 
-include_once "/var/www/html/wp-content/plugins/f_form/includes/redirect.php";
-include_once "/var/www/html/wp-content/plugins/f_form/includes/formlib.php";
+include_once "/var/www/html/kgwpt/wp-content/plugins/f_form/includes/redirect.php";
+include_once "/var/www/html/kgwpt/wp-content/plugins/f_form/includes/formlib.php";
 include_once "/var/www/html/includes/util.php";
 
 /**

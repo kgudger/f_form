@@ -14,9 +14,9 @@
 * main and checkForm in MainPage class not overwritten.
 * 
 */
-require_once("/var/www/html/wp-content/plugins/f_form/includes/mainpage.php");
+require_once("/var/www/html/kgwpt/wp-content/plugins/f_form/includes/mainpage.php");
 include_once "/var/www/html/includes/util.php";
-require_once("/var/www/html/wp-content/plugins/f_form/includes/recaptchalib.php");
+require_once("/var/www/html/kgwpt/wp-content/plugins/f_form/includes/recaptchalib.php");
 /**
  * Child class of MainPage used for user preferrences page.
  *
@@ -49,7 +49,7 @@ function processData(&$uid) {
 	    if ($response != null && $response->success) {
 //		print_r($_FILES);
 */
-	if (isset($_POST['recaptcha_response'])) {
+	if (1) { //(isset($_POST['recaptcha_response'])) {
 
     // Build POST request:
 		$recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
@@ -74,6 +74,8 @@ function processData(&$uid) {
 			$fileExtension = strtolower(end($fileNameCmps));
 			// sanitize file-name
 			$newFileName = $fileNameCmps[0] . "_" . time() . '.' . $fileExtension;
+			$newFileName = str_replace('"', "", $newFileName);
+			$newFileName = str_replace("'", "", $newFileName);
 			// check if file has one of the following extensions
 			$allowedfileExtensions = array('wav', 'aiff', 'ogg', 'mp3', 'aac', 'wma', 'alac');
 			if (in_array($fileExtension, $allowedfileExtensions))
@@ -155,20 +157,12 @@ foreach ($rows as $row) {
 //print_r($tabData);
 $this->retstring.= <<<EOT
 <script src="https://www.google.com/recaptcha/api.js?render=6Lejg8cUAAAAAOa1YnxyH5OlD8ylW5jhD-CfRPaW"></script>
-<script>
-    grecaptcha.ready(function () {
-        grecaptcha.execute('6Lc2x20UAAAAAMdFBs4QS72nnNh1Smn6hTtfU9pl', { action: 'contact' }).then(function (token) {
-            var recaptchaResponse = document.getElementById('recaptchaResponse');
-            recaptchaResponse.value = token;
-        });
-    });
-</script>
 <div class="preamble" id="KSQD-preamble" role="article">
-<h3>Please fill out all the fields</h3>
+<h3 id="serv_head">Please fill out all the fields</h3>
 EOT;
 	$this->retstring.= $this->formL->reportErrors();
 //	echo $this->formL->start('POST', "", 'enctype="multipart/form-data" name="server_file_upload"');
-	$this->retstring.= $this->formL->start('POST', "", 'name="server_file_upload" enctype="multipart/form-data"');
+	$this->retstring.= $this->formL->start('POST', "", 'name="server_file_upload" enctype="multipart/form-data" id="server_form"');
 	$this->retstring.= $this->formL->makeFileInput("fname");
 	$this->retstring.= $this->formL->formatonError('fname','File Name') . "<br><br>";
 	$this->retstring.= $this->formL->makeSelect("directory",$tabData);
@@ -180,11 +174,28 @@ EOT;
 	$this->retstring.= $this->formL->formatonError('seconds','Seconds') ."<br><br>" ;
 $this->retstring.= <<<EOT
 <br>
-<input class="subbutton" type="submit" name="Submit" value="Upload File">
+<input class="subbutton" type="submit" name="Submit" value="Upload File" id="serv_sub">
 <br><br>
+<div id="serv_foot">Please be patient - depending on your internet speed and file size it can take a long time to upload.<br>
+Please do not close the window.
 <input type="hidden" name="recaptcha_response" id="recaptchaResponse">
 </fieldset>
 </form>
+<script>
+    grecaptcha.ready(function () {
+        grecaptcha.execute('6Lc2x20UAAAAAMdFBs4QS72nnNh1Smn6hTtfU9pl', { action: 'contact' }).then(function (token) {
+            var recaptchaResponse = document.getElementById('recaptchaResponse');
+            recaptchaResponse.value = token;
+        });
+    });
+    var f_form = document.getElementById('server_form');
+    f_form.onsubmit = f_sub;
+    function f_sub(event) {
+	var sfoot = document.getElementById("serv_foot");
+	sfoot.innerHTML = 
+			"<strong><font color='red'>Please wait for the file to upload.</font></strong>";
+        };
+</script>
 EOT;
 $this->retstring.=$this->formL->finish();
 return $this->retstring;
