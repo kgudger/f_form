@@ -73,6 +73,7 @@ function processData(&$uid) {
 			$fileNameCmps = explode(".", $fileName);
 			$fileExtension = strtolower(end($fileNameCmps));
 			// sanitize file-name
+			$fileNameCmps[0] = str_replace('.', "", $fileNameCmps[0]);
 			$newFileName = $fileNameCmps[0] . "_" . time() . '.' . $fileExtension;
 			$newFileName = str_replace('"', "", $newFileName);
 			$newFileName = str_replace("'", "", $newFileName);
